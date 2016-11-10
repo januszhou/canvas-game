@@ -39,7 +39,7 @@
      */
     var canvas = document.createElement("canvas");
     var ctx = canvas.getContext("2d");
-    canvas.width = 256;
+    canvas.width = 512;
     canvas.height = 512;
     document.body.appendChild(canvas);
 
@@ -70,7 +70,8 @@
     };
 
     var enemies = {
-        data: []
+        data: [],
+        rows: []
     };
 
     var bullets = [];
@@ -123,17 +124,13 @@
     }, false);
 
     var reset = function () {
-        // Throw the monster somewhere on the screen randomly
-//        monster.x = 32 + (Math.random() * (canvas.width - 64));
-//        monster.y = 32 + (Math.random() * (canvas.height - 64));
-
         player.x = (canvas.width - 48)/2;
         player.y = canvas.height - 48;
 
         // 3 rows of enemies, each row has random from 1 to 3
         for(var i = 0; i <= 2; i++){ //y
 //            var xSpeed = randomIntFromInterval(70, 150);
-            for(var j = 0; j <= 2; j++){ //x
+            for(var j = 0; j <= randomIntFromInterval(3, 7); j++){ //x
                 var e = new enemy();
                 e.x = j*(48 + 24);
                 e.y = i*(48 + 48);
@@ -174,9 +171,9 @@
 
         for(var i = 0; i<=enemies.data.length - 1; i++){
             if(maxColOfEachRow[enemies.data[i].row] !== undefined && maxColOfEachRow[enemies.data[i].row] <= enemies.data[i].col){
-                maxColOfEachRow[enemies.data[i].row] = enemies.data[i].col + 1;
+                maxColOfEachRow[enemies.data[i].row] = enemies.data[i].col;
             } else {
-                maxColOfEachRow[enemies.data[i].row] = enemies.data[i].col + 1;
+                maxColOfEachRow[enemies.data[i].row] = enemies.data[i].col;
             }
         }
 
@@ -190,20 +187,12 @@
                 e.x += e.xSpeed * modifier;
             }
 
-            /**
-             * Only count on first enemy of each row
-             */
-            if(e.col !== 0){
-                continue;
-            }
-
-
             if(e.x <= 0 && e.direction == 'left'){
                 e.direction = 'right';
                 updateRow = true;
             }
 
-            if((e.x + (maxColOfEachRow[e.row] * 48) + (maxColOfEachRow[e.row] - 1) * 24) >= canvas.width && e.direction == 'right'){
+            if((e.x + ((maxColOfEachRow[e.row] - e.col + 1) * 48) + (maxColOfEachRow[e.row] - e.col) * 24) >= canvas.width && e.direction == 'right'){
                 e.direction = 'left';
                 updateRow = true;
             }
@@ -242,9 +231,6 @@
                 }
             }
         }
-//        for()
-
-        // if bullet hit enemy, remove both
 
     };
 
@@ -278,7 +264,7 @@
         var now = Date.now();
         var delta = now - then;
 
-        update(delta / 1500);
+        update(delta / 800);
         render();
 
         then = now;
