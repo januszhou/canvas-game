@@ -14,6 +14,7 @@
     </style>
 </head>
 <body>
+<h3 id="status"></h3>
 <h4 id="score"></h4>
 <script>
     ///////////////// Helper ////////////////
@@ -31,7 +32,7 @@
      * Width * Height px
      * Broad: 256 * 512
      * Player: 48 * 48
-     * Bullet: 16 * 32
+     * Bullet: 16 * 16
      * Enemy: 48 * 48
      * Each enemy x margin: 24
      * Each row enemy y margin: 48
@@ -41,6 +42,8 @@
     canvas.width = 256;
     canvas.height = 512;
     document.body.appendChild(canvas);
+
+    var i = 0; var j = 0;
 
 
     // Game objects
@@ -63,15 +66,11 @@
     var bullet = function(){
         this.x = 0;
         this.y = 0;
-        this.speed = 120;
+        this.speed = 5;
     };
 
     var enemies = {
-        data: [],
-        maxX: 0,
-        minX: 0,
-        maxY: 0,
-        minY: 0
+        data: []
     };
 
     var bullets = [];
@@ -103,6 +102,13 @@
     };
     enemyImage.src = "assets/brick.png";
 
+    var  bulletReady= false;
+    var bulletImage = new Image();
+    bulletImage.onload = function () {
+        bulletReady = true;
+    };
+    bulletImage.src = "assets/bullet.png";
+
     //////////////////// Loading Images ////////////////////
 
     // Handle keyboard controls
@@ -126,7 +132,7 @@
 
         // 3 rows of enemies, each row has random from 1 to 3
         for(var i = 0; i <= 2; i++){ //y
-            var xSpeed = randomIntFromInterval(70, 150);
+//            var xSpeed = randomIntFromInterval(70, 150);
             for(var j = 0; j <= 2; j++){ //x
                 var e = new enemy();
                 e.x = j*(48 + 24);
@@ -134,7 +140,7 @@
                 e.row = i;
                 e.col = j;
                 e.rowTotal = 3;
-                e.xSpeed = xSpeed;
+//                e.xSpeed = xSpeed;
                 enemies.data.push(e);
             }
         }
@@ -142,12 +148,16 @@
 
     // Update game objects
     var update = function (modifier) {
-        if (38 in keysDown) { // Player holding up, firing bullet, firing every 2s
-//            hero.y -= hero.speed * modifier;
+        if (38 in keysDown) { // Player holding up, firing bullet, firing every 1s
+            var b = new bullet();
+            b.x = player.x + 16;
+            b.y = player.y - 16;
+            bullets.push(b);
         }
-//        if (40 in keysDown) { // Player holding down
-//            hero.y += hero.speed * modifier;
-//        }
+
+        if (40 in keysDown) { // Player holding down
+            // nothing
+        }
         if (37 in keysDown) { // Player holding left
             player.x -= player.speed * modifier;
         }
@@ -155,7 +165,15 @@
             player.x += player.speed * modifier;
         }
 
+        var maxColOfEachRow = [];
 
+        for(var i = 0; i<=enemies.data.length - 1; i++){
+            if(maxColOfEachRow[enemies.data[i].row] !== undefined && maxColOfEachRow[enemies.data[i].row] <= enemies.data[i].col){
+                maxColOfEachRow[enemies.data[i].row] = enemies.data[i].col + 1;
+            } else {
+                maxColOfEachRow[enemies.data[i].row] = enemies.data[i].col + 1;
+            }
+        }
 
         for(var i = 0; i<=enemies.data.length - 1; i++){
             var updateRow = false;
@@ -180,7 +198,7 @@
                 updateRow = true;
             }
 
-            if((e.x + (e.rowTotal * 48) + (e.rowTotal - 1) * 24) >= canvas.width && e.direction == 'right'){
+            if((e.x + (maxColOfEachRow[e.row] * 48) + (maxColOfEachRow[e.row] - 1) * 24) >= canvas.width && e.direction == 'right'){
                 e.direction = 'left';
                 updateRow = true;
             }
@@ -197,18 +215,32 @@
             }
         }
 
+        for(var j = 0; j <= bullets.length - 1; j++){
+            var myBullet = bullets[j];
+            myBullet.y -= myBullet.speed;
+
+            if(myBullet.y <= 0){
+                bullets.splice(j, 1);
+            }
+
+            for(var i = 0; i<=enemies.data.length - 1; i++){
+                var detectE = enemies.data[i];
+                if (
+                        detectE.x <= (myBullet.x + 16)
+                        && myBullet.x <= (detectE.x + 48)
+                        && detectE.y <= (myBullet.y + 16)
+                        && myBullet.y <= (detectE.y + 48)
+                ) {
+                    ++score;
+                    enemies.data.splice(i, 1);
+                    bullets.splice(j, 1);
+                }
+            }
+        }
 //        for()
 
         // if bullet hit enemy, remove both
-//        if (
-//                hero.x <= (monster.x + 32)
-//                && monster.x <= (hero.x + 32)
-//                && hero.y <= (monster.y + 32)
-//                && monster.y <= (hero.y + 32)
-//        ) {
-//            ++score;
-//            reset();
-//        }
+
     };
 
     // Draw everything
@@ -227,6 +259,12 @@
             }
         }
 
+        if (bulletReady) {
+            for(var i = 0; i<=bullets.length - 1; i++){
+                ctx.drawImage(bulletImage, bullets[i].x, bullets[i].y);
+            }
+        }
+
         document.getElementById('score').innerHTML = "Score: " + score;
     };
 
@@ -235,7 +273,7 @@
         var now = Date.now();
         var delta = now - then;
 
-        update(delta / 500);
+        update(delta / 1500);
         render();
 
         then = now;
